@@ -1,8 +1,10 @@
 -- Add boost packages
--- add_requires("boost", "spdlog", {system = false})
+add_requires()
 
 -- Create the Stellar-Engine project
 target("SwEngineering")
+
+    add_rules("qt.quickapp")
 
     -- Set the project kind to static
     set_kind("binary")
@@ -17,7 +19,7 @@ target("SwEngineering")
     set_targetdir("../bin")
 
     -- Add the boost packages
-    -- add_packages("boost", "spdlog")
+    add_packages("boost", "spdlog")
 
     -- Add the include directories
     add_includedirs("../src", {public = true})
@@ -47,3 +49,5 @@ target("SwEngineering")
 
     -- Define the _CRT_SECURE_NO_WARNINGS macro for the MSVC compiler (in case)
     add_defines("_CRT_SECURE_NO_WARNINGS")
+
+    add_frameworks("QtWidgets", "QtGui", "QtCore", "QtQuick", "QtQml", "QtQuickControls2", "QtQuickTemplates2", "QtQuick")

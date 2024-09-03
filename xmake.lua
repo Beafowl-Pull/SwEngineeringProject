@@ -10,5 +10,6 @@ set_languages("cxx23")
 add_rules("mode.debug", "mode.release")
 
 includes("src")
+includes("tests")
 
 add_headerfiles("src/(**.hpp)")
