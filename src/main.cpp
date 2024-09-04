@@ -3,15 +3,30 @@
 //
 
 #include <QApplication>
-#include <QMainWindow>
+#include <QVBoxLayout>
+#include <iostream>
+#include "customTopBar.hpp"
+#include "mainWindow.hpp"
+#include "closeBar.hpp"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    MainWindow window;
 
-    QMainWindow mainWindow;
-    mainWindow.setWindowTitle("Main Window");
-    mainWindow.resize(800, 600);
-    mainWindow.show();
+    auto *container = new QWidget(&window);
+    auto *layout = new QHBoxLayout(container);
+    auto *customMenuBar = new CustomTopBar(container);
+    auto *closeBar = new CloseBar(container, &window);
 
-    return app.exec();
+    layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    layout->setSpacing(0);
+    layout->setMargin(0);
+    layout->addWidget(customMenuBar);
+    layout->addStretch(0);
+    layout->addWidget(closeBar);
+
+    window.setCentralWidget(container);
+    window.show();
+
+    return QApplication::exec();
 }
