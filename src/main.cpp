@@ -3,29 +3,32 @@
 //
 
 #include <QApplication>
-#include <QVBoxLayout>
 #include <iostream>
+#include "peerServer.hpp"
+#include "closeBar.hpp"
 #include "customTopBar.hpp"
 #include "mainWindow.hpp"
-#include "closeBar.hpp"
+#include "chatWidget.hpp"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     MainWindow window;
 
-    auto *container = new QWidget(&window);
-    auto *layout = new QHBoxLayout(container);
-    auto *customMenuBar = new CustomTopBar(container);
-    auto *closeBar = new CloseBar(container, &window);
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <host> <port>" << std::endl;
+        return -1;
+    }
 
-    layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    layout->setSpacing(0);
-    layout->setMargin(0);
-    layout->addWidget(customMenuBar);
-    layout->addStretch(0);
-    layout->addWidget(closeBar);
+    QString hostAddress = argv[1];
+    int port = QString(argv[2]).toInt();
 
-    window.setCentralWidget(container);
+    if (port < 1024 || port > 65535) {
+        std::cerr << "Invalid port number. Please use a port number between 1024 and 65535." << std::endl;
+        return -1;
+    }
+
+    PeerServer server = PeerServer(hostAddress, port);
+
     window.show();
 
     return QApplication::exec();
