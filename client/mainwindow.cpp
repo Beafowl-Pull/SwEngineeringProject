@@ -4,6 +4,9 @@
 #include <QtNetwork/QNetworkAccessManager>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QListWidget>
+#include <qjsonarray.h>
+#include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,9 +28,9 @@ MainWindow::MainWindow(QWidget *parent)
     friendsAction->setVisible(false);
     profileAction->setVisible(false);
 
-    minimizeAction = new QAction(QIcon(":/icons/minimize.png"), "Minimize", this);
-    maximizeAction = new QAction(QIcon(":/icons/maximize.png"), "Maximize", this);
-    closeAction = new QAction(QIcon(":/icons/close.png"), "Close", this);
+    minimizeAction = new QAction(QIcon(":/assets/minimize.png"), "Minimize", this);
+    maximizeAction = new QAction(QIcon(":/assets/maximize.png"), "Maximize", this);
+    closeAction = new QAction(QIcon(":/assets/close.png"), "Close", this);
 
     QWidget *spacer = new QWidget(this);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -37,7 +40,6 @@ MainWindow::MainWindow(QWidget *parent)
     toolBar->addAction(maximizeAction);
     toolBar->addAction(closeAction);
 
-    connect(ui->loginButton, &QPushButton::clicked, this, &MainWindow::on_loginButton_clicked);
     connect(minimizeAction, &QAction::triggered, this, &QWidget::showMinimized);
     connect(maximizeAction, &QAction::triggered, this, &QWidget::showMaximized);
     connect(closeAction, &QAction::triggered, this, &QWidget::close);
@@ -71,6 +73,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::on_loginButton_clicked()
 {
+    qDebug() << "clicked";
     QNetworkAccessManager *manager = new QNetworkAccessManager(this);
     QUrl url("http://127.0.0.1:8000/login");
     QNetworkRequest request(url);
@@ -109,17 +112,132 @@ void MainWindow::onLoginResponse(QNetworkReply *reply)
     QJsonObject jsonObject = jsonDoc.object();
 
     if (jsonObject.contains("error")) {
-        QString errorMessage = jsonObject["error"].toString();
-        QMessageBox::warning(this, "Login Failed", errorMessage);
+        QMessageBox::warning(this, "Login Failed", jsonObject["error"].toString());
     } else {
-        QString username = jsonObject["username"].toString();
-        QMessageBox::information(this, "Login Successful", "Welcome, " + username + "!");
+        int userId = jsonObject["id"].toInt();
+        QMessageBox::information(this, "Login Successful", "Welcome, " + jsonObject["username"].toString() + "!");
 
-        friendsAction->setVisible(true);
-        profileAction->setVisible(true);
-        updateToolbarButtons();
+        fetchConversations(userId);
+
         ui->stackedWidget->setCurrentIndex(0);
     }
 
     reply->deleteLater();
 }
+
+
+void MainWindow::onConversationSelected(QListWidgetItem *item)
+{
+    QString selectedUser = item->text();
+    QMessageBox::information(this, "Conversation Selected", "You selected: " + selectedUser);
+
+    // TODO: Load messages for the selected user and display them in the chat area
+}
+
+void MainWindow::fetchConversations(int userId)
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QString url = QString("http://127.0.0.1:8000/conversations/%1").arg(userId);
+
+    QNetworkRequest request((QUrl(url)));
+
+    qDebug() << "Fetching conversations for user:" << userId;
+
+    connect(manager, &QNetworkAccessManager::finished, this, &MainWindow::onConversationsFetched);
+
+    manager->get(request);
+}
+
+void MainWindow::onConversationsFetched(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        QMessageBox::warning(this, "Error", "Failed to fetch conversations: " + reply->errorString());
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray responseData = reply->readAll();
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
+
+    if (!jsonDoc.isArray()) {
+        QMessageBox::warning(this, "Error", "Invalid response format.");
+        reply->deleteLater();
+        return;
+    }
+
+    QJsonArray conversationsArray = jsonDoc.array();
+    ui->leftMenu->clear();
+    processedReceiverIds.clear();
+
+    for (const QJsonValue &value : conversationsArray) {
+        QJsonObject conversation = value.toObject();
+        int receiverId = conversation["receiver_id"].toInt();
+        QString content = conversation["content"].toString();
+
+        if (!processedReceiverIds.contains(receiverId)) {
+            processedReceiverIds.insert(receiverId);
+            fetchReceiverName(receiverId, content);
+        }
+    }
+
+    reply->deleteLater();
+}
+
+void MainWindow::fetchReceiverName(int userId, const QString &lastMessage)
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QString url = QString("http://127.0.0.1:8000/user/%1").arg(userId);
+
+    QNetworkRequest request((QUrl(url)));
+
+    connect(manager, &QNetworkAccessManager::finished, this, [this, lastMessage](QNetworkReply *reply) {
+        this->onReceiverNameFetched(reply, lastMessage);
+    });
+
+    manager->get(request);
+}
+
+void MainWindow::onReceiverNameFetched(QNetworkReply *reply, const QString &lastMessage)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        qDebug() << "Failed to fetch receiver name: " << reply->errorString();
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray responseData = reply->readAll();
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
+
+    if (!jsonDoc.isObject()) {
+        qDebug() << "Invalid response format for receiver name.";
+        reply->deleteLater();
+        return;
+    }
+
+    QJsonObject jsonObject = jsonDoc.object();
+    QString receiverName = jsonObject["username"].toString();
+
+    QWidget *itemWidget = new QWidget(ui->leftMenu);
+    QVBoxLayout *itemLayout = new QVBoxLayout(itemWidget);
+    itemLayout->setContentsMargins(5, 5, 5, 5);
+
+    QLabel *receiverLabel = new QLabel(receiverName, itemWidget);
+    receiverLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
+    QLabel *messageLabel = new QLabel(lastMessage, itemWidget);
+    messageLabel->setStyleSheet("font-size: 12px; color: gray;");
+
+    itemLayout->addWidget(receiverLabel);
+    itemLayout->addWidget(messageLabel);
+
+    itemWidget->setLayout(itemLayout);
+
+    QListWidgetItem *listItem = new QListWidgetItem(ui->leftMenu);
+    listItem->setSizeHint(itemWidget->sizeHint());
+    ui->leftMenu->addItem(listItem);
+    ui->leftMenu->setItemWidget(listItem, itemWidget);
+
+    reply->deleteLater();
+}
+
+
+

@@ -15,7 +15,7 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
-    background-image: url(/home/beafowl/Downloads/background.jpg);
+    background-image: url(:/assets/background.png);
     background-repeat: no-repeat;
     background-position: center;
 }
@@ -32,30 +32,19 @@
      </rect>
     </property>
     <widget class="QWidget" name="page">
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QListWidget" name="leftMenu">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>120</width>
-        <height>80</height>
+        <width>401</width>
+        <height>1081</height>
        </rect>
       </property>
-      <property name="title">
-       <string/>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_2">
-      <property name="geometry">
-       <rect>
-        <x>610</x>
-        <y>440</y>
-        <width>80</width>
-        <height>24</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>PushButton</string>
+      <property name="styleSheet">
+       <string notr="true">QListWidget {
+	background-color: rgba(255, 255, 255, 0.2);
+}</string>
       </property>
      </widget>
     </widget>
@@ -136,9 +125,9 @@
       <widget class="QCheckBox" name="checkBox">
        <property name="geometry">
         <rect>
-         <x>243</x>
+         <x>210</x>
          <y>230</y>
-         <width>111</width>
+         <width>141</width>
          <height>22</height>
         </rect>
        </property>
@@ -188,7 +177,7 @@ QPushButton:hover {
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial'; font-size:48pt; font-weight:700;&quot;&gt;LOGIN&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="textFormat">
-        <enum>Qt::AutoText</enum>
+        <enum>Qt::TextFormat::AutoText</enum>
        </property>
        <property name="scaledContents">
         <bool>false</bool>
@@ -197,9 +186,9 @@ QPushButton:hover {
       <widget class="QLabel" name="label_3">
        <property name="geometry">
         <rect>
-         <x>253</x>
+         <x>200</x>
          <y>330</y>
-         <width>171</width>
+         <width>211</width>
          <height>16</height>
         </rect>
        </property>
@@ -237,9 +226,9 @@ QPushButton:hover {
       <widget class="QPushButton" name="pushButton">
        <property name="geometry">
         <rect>
-         <x>359</x>
+         <x>349</x>
          <y>229</y>
-         <width>121</width>
+         <width>151</width>
          <height>24</height>
         </rect>
        </property>

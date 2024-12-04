@@ -76,3 +76,28 @@ def get_messages(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No messages found")
 
     return messages
+
+@app.get("/conversations/{user_id}", response_model=List[MessageResponse])
+def get_conversations(user_id: int, db: Session = Depends(get_db)):
+    conversations = db.query(Message).filter(
+        (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+    ).all()
+
+    if not conversations:
+        raise HTTPException(status_code=404, detail="No conversations found")
+
+    return conversations
+
+@app.get("/users", response_model=List[UserResponse])
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return users
+
+@app.get("/user/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user

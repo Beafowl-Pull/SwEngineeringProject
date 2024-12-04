@@ -39,6 +39,9 @@ else()
     else()
         add_executable(client
             ${PROJECT_SOURCES}
+            ressources.qrc
+            ressources.qrc
+            ressources.qrc
         )
     endif()
 endif()
