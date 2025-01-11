@@ -19,6 +19,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void setupConversationPage();
     void resizeEvent(QResizeEvent *event);
     void updateToolbarButtons();
     void onLoginResponse(QNetworkReply *reply);
@@ -28,6 +29,9 @@ public:
     void fetchReceiverName(int userId, const QString &lastMessage);
     void onReceiverNameFetched(QNetworkReply *reply, const QString &lastMessage);
     void setupSideMenu();
+    void addMessage(const QString &message, bool isSender);
+    void onSendMessage();
+    void onMessageSent(QNetworkReply *reply);
 
 private slots:
     void on_loginButton_clicked();
@@ -41,6 +45,8 @@ private:
     QAction *minimizeAction;
     QAction *maximizeAction;
     QAction *closeAction;
+    QListWidget *messageListWidget;
+    QLineEdit *inputField;
     QSet<int> processedReceiverIds;
 };
 #endif // MAINWINDOW_H

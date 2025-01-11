@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(minimizeAction, &QAction::triggered, this, &QWidget::showMinimized);
     connect(maximizeAction, &QAction::triggered, this, &QWidget::showMaximized);
     connect(closeAction, &QAction::triggered, this, &QWidget::close);
+    setupConversationPage();
 }
 
 MainWindow::~MainWindow()
@@ -196,6 +197,97 @@ void MainWindow::fetchReceiverName(int userId, const QString &lastMessage)
 
     manager->get(request);
 }
+
+void MainWindow::setupConversationPage()
+{
+    QHBoxLayout *mainLayout = new QHBoxLayout(this->centralWidget());
+
+    ui->leftMenu = new QListWidget(this);
+    ui->leftMenu->setFixedWidth(200);
+    mainLayout->addWidget(ui->leftMenu);
+
+    QWidget *conversationWidget = new QWidget(this);
+    QVBoxLayout *conversationLayout = new QVBoxLayout(conversationWidget);
+
+    messageListWidget = new QListWidget(conversationWidget);
+    messageListWidget->setStyleSheet(
+        "QListWidget::item { border: none; padding: 5px; }"
+        "QListWidget::item:selected { background: none; }"
+        );
+    conversationLayout->addWidget(messageListWidget);
+
+    QWidget *inputBar = new QWidget(conversationWidget);
+    QHBoxLayout *inputLayout = new QHBoxLayout(inputBar);
+
+    inputField = new QLineEdit(inputBar);
+    inputField->setPlaceholderText("Type your message...");
+    QPushButton *sendButton = new QPushButton("Send", inputBar);
+
+    inputLayout->addWidget(inputField);
+    inputLayout->addWidget(sendButton);
+
+    conversationLayout->addWidget(inputBar);
+    mainLayout->addWidget(conversationWidget);
+
+    connect(sendButton, &QPushButton::clicked, this, &MainWindow::onSendMessage);
+}
+
+void MainWindow::addMessage(const QString &message, bool isSender)
+{
+    QListWidgetItem *item = new QListWidgetItem(message, messageListWidget);
+
+    if (isSender) {
+        item->setTextAlignment(Qt::AlignRight);
+        item->setBackgroundColor(Qt::lightGray);
+    } else {
+        item->setTextAlignment(Qt::AlignLeft);
+        item->setBackgroundColor(Qt::white);
+    }
+
+    messageListWidget->addItem(item);
+    messageListWidget->scrollToBottom(); // Scroll to the bottom for new messages
+}
+
+void MainWindow::onSendMessage()
+{
+    QString message = inputField->text();
+    int currentUserId;
+    int currentReceiverId;
+
+    if (message.isEmpty()) {
+        return;
+    }
+
+    addMessage(message, true);
+    inputField->clear();
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QUrl url("http://127.0.0.1:8000/send_message");
+    QNetworkRequest request(url);
+
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject json;
+    json["sender_id"] = currentUserId;
+    json["receiver_id"] = currentReceiverId;
+    json["content"] = message;
+
+    QJsonDocument doc(json);
+    QByteArray data = doc.toJson();
+
+    manager->post(request, data);
+
+    connect(manager, &QNetworkAccessManager::finished, this, &MainWindow::onMessageSent);
+}
+
+void MainWindow::onMessageSent(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        QMessageBox::warning(this, "Error", "Failed to send message: " + reply->errorString());
+    }
+    reply->deleteLater();
+}
+
 
 void MainWindow::onReceiverNameFetched(QNetworkReply *reply, const QString &lastMessage)
 {
